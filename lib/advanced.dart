@@ -1,5 +1,6 @@
-/// Advanced example. Provider encapsulates AnimatedListState. This allows to call Provider API
-/// outside of the widget State. AddButtonSeparateWidget demonstrates this feature.
+/// Advanced example. Provider encapsulates AnimatedList key and its removedItemBuilder. This
+/// allows to call Provider API outside of the widget that builds AnimatedList.
+/// AddButtonSeparateWidget demonstrates this feature.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,15 +11,13 @@ typedef RemovedItemBuilder = Widget Function(
 class Users extends ChangeNotifier {
   final _list = ['0', '1', '2', '3', '4'];
   final GlobalKey<AnimatedListState> _listKey = GlobalKey();
-  RemovedItemBuilder? _removedItemBuilder;
+  final RemovedItemBuilder _removedItemBuilder;
+
+  Users(this._removedItemBuilder);
 
   int get length => _list.length;
 
   operator [](index) => _list[index];
-
-  set removedItemBuilder(RemovedItemBuilder value) {
-    _removedItemBuilder ??= value;
-  }
 
   GlobalKey<AnimatedListState> get listKey => _listKey;
 
@@ -35,10 +34,7 @@ class Users extends ChangeNotifier {
     _listKey.currentState!.removeItem(
       index,
       (BuildContext context, Animation<double> animation) {
-        if (_removedItemBuilder == null) {
-          throw Exception('Set `removedItemBuilder` field of `Users` class');
-        }
-        return _removedItemBuilder!(user, context, animation);
+        return _removedItemBuilder(user, context, animation);
       },
       duration: const Duration(seconds: 1),
     );
@@ -52,31 +48,15 @@ class AdvancedApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        home: ChangeNotifierProvider(create: (_) => Users(), child: const AnimatedListDemo()));
+    return const MaterialApp(home: AnimatedListDemo());
   }
 }
 
-class AnimatedListDemo extends StatefulWidget {
+class AnimatedListDemo extends StatelessWidget {
   const AnimatedListDemo({Key? key}) : super(key: key);
 
-  @override
-  State<AnimatedListDemo> createState() => _AnimatedListDemoState();
-}
-
-class _AnimatedListDemoState extends State<AnimatedListDemo> {
-  late Users users;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    users = Provider.of<Users>(context);
-    users.removedItemBuilder = (user, context, animation) {
-      return SizeTransition(sizeFactor: animation, child: _buildItem(user));
-    };
-  }
-
-  Widget _buildItem(String user, [int? removeIndex]) {
+  Widget _buildItem(BuildContext context, String user, [int? removeIndex]) {
+    Users users = Provider.of<Users>(context, listen: false);
     return ListTile(
       key: ValueKey<String>(user),
       title: Text(user),
@@ -94,23 +74,27 @@ class _AnimatedListDemoState extends State<AnimatedListDemo> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ChangeNotifierProvider(create: (_) => Users((user, context, animation) {
+      return SizeTransition(sizeFactor: animation, child: _buildItem(context, user));
+    }), child: Scaffold(
       appBar: AppBar(
         title: const Text('Advanced AnimatedList Provider Demo'),
       ),
-      body: AnimatedList(
-        key: users.listKey,
-        shrinkWrap: true,
-        initialItemCount: users.length,
-        itemBuilder: (context, index, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: _buildItem(users[index], index),
-          );
-        },
-      ),
+      body: Consumer<Users>(builder: (BuildContext context, Users users, _){
+        return AnimatedList(
+          key: users.listKey,
+          shrinkWrap: true,
+          initialItemCount: users.length,
+          itemBuilder: (context, index, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: _buildItem(context, users[index], index),
+            );
+          },
+        );
+      }),
       floatingActionButton: const AddButtonSeparateWidget(),
-    );
+    ));
   }
 }
 
