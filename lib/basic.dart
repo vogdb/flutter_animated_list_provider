@@ -30,44 +30,32 @@ class BasicApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        home: ChangeNotifierProvider(create: (_) => Users(), child: const AnimatedListDemo()));
+        home: ChangeNotifierProvider(create: (_) => Users(), child: AnimatedListDemo()));
   }
 }
 
-class AnimatedListDemo extends StatefulWidget {
-  const AnimatedListDemo({Key? key}) : super(key: key);
-
-  @override
-  State<AnimatedListDemo> createState() => _AnimatedListDemoState();
-}
-
-class _AnimatedListDemoState extends State<AnimatedListDemo> {
+class AnimatedListDemo extends StatelessWidget {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey();
-  late Users users;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    users = Provider.of<Users>(context);
-  }
+  AnimatedListDemo({Key? key}) : super(key: key);
 
-  void addUser() {
+  void addUser(Users users) {
     final int index = users.add();
     _listKey.currentState!.insertItem(index, duration: const Duration(seconds: 1));
   }
 
-  void deleteUser(int index) {
+  void deleteUser(Users users, int index) {
     String user = users.removeAt(index);
     _listKey.currentState!.removeItem(
       index,
       (context, animation) {
-        return SizeTransition(sizeFactor: animation, child: _buildItem(user));
+        return SizeTransition(sizeFactor: animation, child: _buildItem(users, user));
       },
       duration: const Duration(seconds: 1),
     );
   }
 
-  Widget _buildItem(String user, [int? removeIndex]) {
+  Widget _buildItem(Users users, String user, [int? removeIndex]) {
     return ListTile(
       key: ValueKey<String>(user),
       title: Text(user),
@@ -77,7 +65,7 @@ class _AnimatedListDemoState extends State<AnimatedListDemo> {
       trailing: (removeIndex != null)
           ? IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: () => deleteUser(removeIndex),
+              onPressed: () => deleteUser(users, removeIndex),
             )
           : null,
     );
@@ -85,6 +73,7 @@ class _AnimatedListDemoState extends State<AnimatedListDemo> {
 
   @override
   Widget build(BuildContext context) {
+    Users users = Provider.of<Users>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Basic AnimatedList Provider Demo'),
@@ -95,12 +84,12 @@ class _AnimatedListDemoState extends State<AnimatedListDemo> {
         itemBuilder: (context, index, animation) {
           return FadeTransition(
             opacity: animation,
-            child: _buildItem(users[index], index),
+            child: _buildItem(users, users[index], index),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: addUser,
+        onPressed: () => addUser(users),
         tooltip: 'Add an item',
         child: const Icon(Icons.add),
       ),
