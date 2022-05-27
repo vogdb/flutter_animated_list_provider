@@ -1,4 +1,4 @@
-/// Basic example. Provider API is called within the same widget State where AnimatedList is built.
+/// Basic example. Provider is used within the same widget where AnimatedList is built.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

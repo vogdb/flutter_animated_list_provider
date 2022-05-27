@@ -1,5 +1,5 @@
 /// Advanced example. Provider encapsulates AnimatedList key and its removedItemBuilder. This
-/// allows to call Provider API outside of the widget that builds AnimatedList.
+/// allows to call Provider outside of the widget that builds AnimatedList.
 /// AddButtonSeparateWidget demonstrates this feature.
 
 import 'package:flutter/material.dart';
